@@ -2,6 +2,9 @@ package frc.robot;
 
 import java.util.function.Supplier;
 
+import com.ctre.phoenix6.StatusCode;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
@@ -123,5 +126,49 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     public Command runDriveSlipTest()
     {
         return m_slipSysIdRoutine.quasistatic(SysIdRoutine.Direction.kForward);
+    }
+
+    public void setCurrentLimitDrive(double currentLimit) {
+
+        for (var module : Modules) {
+            var drive = module.getDriveMotor();
+
+            CurrentLimitsConfigs currentConfig = new CurrentLimitsConfigs();
+
+            StatusCode refresh = drive.getConfigurator().refresh(currentConfig, 0.1);
+
+            if (!refresh.isOK()) {
+                System.out.println(
+                        "TalonFX ID " + drive.getDeviceID() + " failed refresh Current configs with error "
+                                + refresh.toString());
+            }
+
+            currentConfig.SupplyCurrentLimit = currentLimit;
+            currentConfig.SupplyCurrentThreshold = currentLimit;
+            currentConfig.SupplyTimeThreshold = 0;
+            currentConfig.SupplyCurrentLimitEnable = true;
+
+            StatusCode response = drive.getConfigurator().apply(currentConfig);
+            if (!response.isOK()) {
+                System.out.println(
+                        "TalonFX ID " + drive.getDeviceID() + " failed config with error " + response.toString());
+            }
+        }
+    }
+
+    public void setTorqueCurrentLimitDrive(double torqueCurrentLimit) {
+        for (var module : Modules) {
+            var drive = module.getDriveMotor();
+            TorqueCurrentConfigs torqueCurrentConfigs = new TorqueCurrentConfigs();
+            StatusCode refreshTorque = drive.getConfigurator().refresh(torqueCurrentConfigs, 0.1);
+
+            if (!refreshTorque.isOK()) {
+                System.out.println(
+                        "TalonFX ID " + drive.getDeviceID() + " failed refresh Current configs with error "
+                                + refreshTorque.toString());
+            }
+            torqueCurrentConfigs.PeakForwardTorqueCurrent = torqueCurrentLimit;
+            torqueCurrentConfigs.PeakReverseTorqueCurrent = -torqueCurrentLimit;
+        }
     }
 }
